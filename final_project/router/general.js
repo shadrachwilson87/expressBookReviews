@@ -1,67 +1,61 @@
+const axios = require('axios');
 const express = require('express');
-let books = require("./booksdb.js"); // Assuming booksdb.js exports an array of books
-let isValid = require("./auth_users.js").isValid;
-let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
-// Register a new user
-public_users.post('/register', function (req, res) {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
+// Task 10: Get the list of books available in the shop
+public_users.get('/', async function (req, res) {
+  try {
+    const response = await axios.get('http://api.example.com/books');
+    const books = response.data;
+    return res.json({ books });
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    return res.status(500).json({ message: 'Failed to fetch books' });
   }
-  if (users.find(u => u.username === username)) {
-    return res.status(409).json({ message: 'Username already exists' });
-  }
-  // Example: Add new user to users array (replace with actual implementation)
-  users.push({ username, password });
-  res.status(201).json({ message: 'User registered successfully' });
 });
 
-// Get the book list available in the shop
-public_users.get('/', function (req, res) {
-  res.json(books); // Respond with JSON array of books
-});
-
-// Get book details based on ISBN
+// Task 11: Get book details based on ISBN
 public_users.get('/isbn/:isbn', function (req, res) {
-  const isbn = req.params.isbn;
-  const book = books.find(b => b.ISBN === isbn);
-  if (!book) {
-    return res.status(404).json({ message: 'Book not found' });
-  }
-  res.json(book);
+  const { isbn } = req.params;
+  
+  axios.get(`http://api.example.com/book/${isbn}`)
+    .then(response => {
+      const book = response.data;
+      return res.json({ book });
+    })
+    .catch(error => {
+      console.error('Error fetching book details:', error);
+      return res.status(500).json({ message: 'Failed to fetch book details' });
+    });
 });
 
-// Get book details based on author
-public_users.get('/author/:author', function (req, res) {
-  const author = req.params.author;
-  const authorBooks = books.filter(b => b.author === author);
-  if (authorBooks.length === 0) {
-    return res.status(404).json({ message: 'No books found for this author' });
+// Task 12: Get book details based on Author
+public_users.get('/author/:author', async function (req, res) {
+  const { author } = req.params;
+
+  try {
+    const response = await axios.get(`http://api.example.com/books?author=${author}`);
+    const books = response.data;
+    return res.json({ books });
+  } catch (error) {
+    console.error('Error fetching books by author:', error);
+    return res.status(500).json({ message: 'Failed to fetch books by author' });
   }
-  res.json(authorBooks);
 });
 
-// Get all books based on title
+// Task 13: Get book details based on Title
 public_users.get('/title/:title', function (req, res) {
-  const title = req.params.title;
-  const titleBooks = books.filter(b => b.title.includes(title));
-  if (titleBooks.length === 0) {
-    return res.status(404).json({ message: 'No books found with this title' });
-  }
-  res.json(titleBooks);
-});
+  const { title } = req.params;
 
-// Get book review
-public_users.get('/review/:isbn', function (req, res) {
-  const isbn = req.params.isbn;
-  // Assume reviews are stored with each book in booksdb.js or another data source
-  const book = books.find(b => b.ISBN === isbn);
-  if (!book || !book.reviews || book.reviews.length === 0) {
-    return res.status(404).json({ message: 'No reviews found for this book' });
-  }
-  res.json(book.reviews);
+  axios.get(`http://api.example.com/books?title=${title}`)
+    .then(response => {
+      const books = response.data;
+      return res.json({ books });
+    })
+    .catch(error => {
+      console.error('Error fetching books by title:', error);
+      return res.status(500).json({ message: 'Failed to fetch books by title' });
+    });
 });
 
 module.exports.general = public_users;
